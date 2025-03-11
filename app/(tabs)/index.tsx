@@ -4,15 +4,16 @@ import {
   Image,
   ScrollView,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { images } from "@/constants/images";
 import { icons } from "@/constants/icons";
 import SearchBar from "@/components/SearchBar";
 import { useRouter } from "expo-router";
 import useFetch from "@/services/useFetch";
-import { fetchMovies } from "@/services/api";
+import { fetchMovies, fetchMoreMovies } from "@/services/api";
 import MovieCard from "@/components/MovieCard";
 import { getTrendingMovies } from "@/services/appwrite";
 import TrendingCard from "@/components/TrendingCard";
@@ -26,11 +27,27 @@ const Index = () => {
     error: trendingError,
   } = useFetch(getTrendingMovies);
 
+  const [page, setPage] = useState(1);
+  const [allMovies, setAllMovies] = useState<Movie[]>([]);
+
   const {
     data: movies,
     loading: moviesLoading,
     error: moviesError,
   } = useFetch(() => fetchMovies({ query: "" }));
+
+  const loadMoreMovies = async () => {
+    const nextPage = page + 1;
+    const moreMovies = await fetchMoreMovies({ query: "", page: nextPage });
+    setAllMovies([...allMovies, ...moreMovies]);
+    setPage(nextPage);
+  };
+
+  useEffect(() => {
+    if (movies) {
+      setAllMovies(movies);
+    }
+  }, [movies]);
 
   return (
     <View className="flex-1 bg-primary">
@@ -65,10 +82,10 @@ const Index = () => {
                 <FlatList
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  ItemSeparatorComponent={() => <View className="w-4"/>}
+                  ItemSeparatorComponent={() => <View className="w-4" />}
                   data={trendingMovies}
                   renderItem={({ item, index }) => (
-                    <TrendingCard movie={item} index={index}/>
+                    <TrendingCard movie={item} index={index} />
                   )}
                   keyExtractor={(item) => item.movie_id.toString()}
                   className="mt-3 mb-4"
@@ -80,9 +97,9 @@ const Index = () => {
                 Latest Movies
               </Text>
               <FlatList
-                data={movies}
+                data={allMovies}
                 renderItem={({ item }) => <MovieCard {...item} />}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item) => item.id.toString()}
                 numColumns={3}
                 columnWrapperStyle={{
                   justifyContent: "flex-start",
@@ -92,6 +109,16 @@ const Index = () => {
                 }}
                 className="mt-2 pb-32"
                 scrollEnabled={false}
+                ListFooterComponent={
+                  <TouchableOpacity
+                    onPress={loadMoreMovies}
+                    className="mt-5 mb-10 px-2 py-4 rounded-full bg-darkAccent"
+                  >
+                    <Text className="text-center text-primary text-lg font-semibold">
+                      Load More
+                    </Text>
+                  </TouchableOpacity>
+                }
               />
             </>
           </View>

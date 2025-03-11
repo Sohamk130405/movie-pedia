@@ -43,3 +43,27 @@ export const fetchMovieDetails = async (
     throw error;
   }
 };
+
+export const fetchMoreMovies = async ({
+  query,
+  page,
+}: {
+  query?: string;
+  page: number;
+}) => {
+  const endpoint = query
+    ? `${TMDB_CONFIG.BASE_URL}/search/movie?query=${encodeURIComponent(
+        query
+      )}&page=${page}`
+    : `${TMDB_CONFIG.BASE_URL}/discover/movie?sort_by=popularity.desc&page=${page}`;
+  const response = await fetch(endpoint, {
+    method: "GET",
+    headers: TMDB_CONFIG.headers,
+  });
+  if (!response.ok) {
+    // @ts-ignore
+    throw new Error("Failed to fetch more movies", response.statusText);
+  }
+  const data = await response.json();
+  return data.results;
+};
